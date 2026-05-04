@@ -1,0 +1,7 @@
+	0
+ccp_alpha	0.0
+criterion	log_loss
+max_depth	
+max_features	0.1
+n_estimators	100
+random_state	42

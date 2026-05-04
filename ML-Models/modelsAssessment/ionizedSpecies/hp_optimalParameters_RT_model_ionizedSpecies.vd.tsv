@@ -1,0 +1,7 @@
+	0
+ccp_alpha	0.0
+criterion	entropy
+max_depth	20
+max_features	1.0
+n_estimators	100
+random_state	42
