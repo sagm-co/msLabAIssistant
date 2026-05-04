@@ -1,0 +1,22 @@
+inchikey	name	smiles	ionizedSpecies	fragmentationProfile	tR	amenability
+YASYVMFAVPKPKE-UHFFFAOYSA-N	Acephate	COP(=O)(NC(C)=O)SC	+H			
+WFDXOXNFNRHQEC-UHFFFAOYSA-N	Azoxystrobin	COC=C(C(=O)OC)c1ccccc1Oc1cc(Oc2ccccc2C#N)ncn1	+H			
+OMFRMAHOUUJSGP-IRHGGOMRSA-N	Bifenthrin	Cc1c(COC(=O)[C@@H]2[C@H](/C=C(\Cl)C(F)(F)F)C2(C)C)cccc1-c1ccccc1	+H			
+WYEMLYFITZORAB-UHFFFAOYSA-N	Boscalid	O=C(Nc1ccccc1-c1ccc(Cl)cc1)c1cccnc1Cl	+H			
+PSOVNZZNOMJUBI-UHFFFAOYSA-N	Chlorantraniliprole	CNC(=O)c1cc(Cl)cc(C)c1NC(=O)c1cc(Br)nn1-c1ncccc1Cl	+H			
+PGOOBECODWQEAB-UHFFFAOYSA-N	Clothianidin	CNC(=N[N+](=O)[O-])NCc1cnc(Cl)s1	+H			
+BQYJATMQXGBDHF-UHFFFAOYSA-N	Difenoconazole	CC1COC(Cn2cncn2)(c2ccc(Oc3ccc(Cl)cc3)cc2Cl)O1	+H			
+YKBZOVFACRVRJN-UHFFFAOYSA-N	Dinotefuran	CNC(=N[N+](=O)[O-])NCC1CCOC1	+H			
+ZOCSXAVNDGMNBV-UHFFFAOYSA-N	Fipronil	N#Cc1nn(-c2c(Cl)cc(C(F)(F)F)cc2Cl)c(N)c1S(=O)C(F)(F)F	+H			
+GBOYJIHYACSLGN-UHFFFAOYSA-N	Fluopicolide	O=C(NCc1ncc(C(F)(F)F)cc1Cl)c1c(Cl)cccc1Cl	+H			
+YWTYJOPNNQFBPC-UHFFFAOYSA-N	Imidacloprid	O=[N+]([O-])/N=C1\NCCN1Cc1ccc(Cl)nc1	+H			
+TYLCDJYHUVCRBH-UHFFFAOYSA-N	Imidacloprid-olefin	O=[N+]([O-])Nc1nccn1Cc1ccc(Cl)nc1	+H			
+ZXQYGBMAQZUVMI-UHFFFAOYSA-N	Lambda cyhalothrin	CC1(C)C(C=C(Cl)C(F)(F)F)C1C(=O)OC(C#N)c1cccc(Oc2ccccc2)c1	+H			
+NNKVPIKMPCQWCG-UHFFFAOYSA-N	Methamidophos	COP(N)(=O)SC	+H			
+TVLSRXXIMLFWEO-UHFFFAOYSA-N	Prochloraz	CCCN(CCOc1c(Cl)cc(Cl)cc1Cl)C(=O)n1ccnc1	+H			
+STJLVHWMYQXCPB-UHFFFAOYSA-N	Propiconazole	CCCC1COC(Cn2cncn2)(c2ccc(Cl)cc2Cl)O1	+H			
+ZVQOOHYFBIDMTQ-UHFFFAOYSA-N	Sulfoxaflor	CC(c1ccc(C(F)(F)F)nc1)S(C)(=O)=NC#N	+H			
+PXMNMQRDXWABCY-UHFFFAOYSA-N	Tebuconazole	CC(C)(C)C(O)(CCc1ccc(Cl)cc1)Cn1cncn1	+H			
+WJCNZQLZVWNLKY-UHFFFAOYSA-N	Thiabendazole	c1ccc2[nH]c(-c3cscn3)nc2c1	+H			
+NWWZPOKUUAIXIW-UHFFFAOYSA-N	Thiamethoxam	CN1COCN(Cc2cnc(Cl)s2)C1=N[N+](=O)[O-]	+H			
+ONCZDRURRATYFI-TVJDWZFNSA-N	Trifloxystrobin	CO/N=C(/C(=O)OC)c1ccccc1CO/N=C(\C)c1cccc(C(F)(F)F)c1	+H			

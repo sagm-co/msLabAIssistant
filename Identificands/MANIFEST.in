@@ -1,0 +1,6 @@
+include src/msData/*.*
+recursive-include src/External/Fragmentation *
+recursive-include src/External/LARPRawReader *
+recursive-include models *
+recursive-include examples *
+

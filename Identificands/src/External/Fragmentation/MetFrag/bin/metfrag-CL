@@ -1,0 +1,410 @@
+#!/bin/bash
+
+#----------------------------------------------------------------
+# Obtencion de opciones y parametros
+ORDPARAMS=$(getopt -o 'o:f:s:d:c:b:t:a:m:' -n 'metfrag-CL' -- "$@") #getopt reorganiza las opciones y argumentos que se pasan a un
+                                                          #comando bash (ver "man getopt"). En este caso el arreglo de
+                                                          #opciones y comandos se almancena en la variable temporal ORDPARAMS
+                                                          #se adiciona ":" dado que esta opcion requiere un argumento
+                                                          #(si fuere opcional dicho argumento se agraga "::")
+                                                          #(ver opcion -o en "man getopt")
+
+#Options:
+# o: output file
+# f: base molecular formula 
+# s: spectrum file
+# d: relative mass deviation
+# c: cadidate prefix for configuration files
+# b: local data base
+# t: tree deep
+# m: precursor neutral mass
+# a: type of ionized species, see folowing section
+
+
+
+#echo $ORDPARAMS
+eval set -- "$ORDPARAMS" # Rearregla las posiciones de opciones y comando de acuerdo con getopt
+unset ORDPARAMS # Elimina la variable temporal donde se almacenan las opciones y argumentos reordenados.
+
+#------------------------------------------------------------------
+# Variables de proceso
+#------------
+declare -A ionizedSpeciesL
+ionizedSpeciesL[1]="[M+H]+"
+ionizedSpeciesL[18]="[M+NH4]+"
+ionizedSpeciesL[23]="[M+Na]+"
+ionizedSpeciesL[39]="[M+K]+"
+ionizedSpeciesL[33]="[M+CH3OH+H]+"
+ionizedSpeciesL[42]="[M+ACN+H]+"
+ionizedSpeciesL[64]="[M+ACN+Na]+"
+ionizedSpeciesL[83]="[M+2ACN+H]+"
+ionizedSpeciesL[-1]="[M-H]-"
+ionizedSpeciesL[35]="[M+Cl]-"
+ionizedSpeciesL[45]="[M+HCOO]-"
+ionizedSpeciesL[59]="[M+CH3COO]-"
+
+#------------------------------------------------------------------
+#Ajuste de parametros por omision
+#------------
+
+ionizedSpecies=1 # Ion con H+
+polarity="true" # Polaridad positiva
+spectrumFile="spectrum.dat" # contine lista con filas mz intensidad
+DBrmd=5.0 # ppm
+compID=1125g
+Fragmentrmd=5.0 #ppm
+outputFile="output" # nombre de los archivos de salida
+nThreads=4
+candidateSufix=$(mktemp XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX)
+paramsFile="parameters_"$candidateSufix".cfg"
+localDB="db_"$candidateSufix".csv" # BD con informacion de moleculas candidatas
+localDB_external=0
+treeDeep=2
+searchKey="NeutralPrecursorMolecularFormula = "$molecularFormula
+
+
+#------------------------------------------------------------------
+# Ajuste del script considerando parametros y opciones
+#----------------
+
+if [ $# -eq 1 ]; then
+    echo -e "Usage:\t metfrag-CL  <SMILES> -f <molecular formula> [-a <ionizedSpecies index>] [-o <output file>] [-s <spectrum name>*] [-d <value ppm>] [-c <candidateSufix>]\n"
+    echo "Options:"
+    echo -e "f:\t Molecular formula"
+    echo -e "a:\t IonizedSpecies index"
+    echo -e "\t\t1:\t [M+H]+ (by default)"
+    echo -e "\t\t18:\t [M+NH4]+"
+    echo -e "\t\t23:\t [M+Na]+"
+    echo -e "\t\t39:\t [M+K]+"
+    echo -e "\t\t33:\t [M+CH3OH+H]+"
+    echo -e "\t\t42:\t [M+ACN+H]+"
+    echo -e "\t\t64:\t [M+ACN+Na]+"
+    echo -e "\t\t83:\t [M+2ACN+H]+"
+    echo -e "\t\t-1:\t [M-H]-"
+    echo -e "\t\t35:\t [M+Cl]-"
+    echo -e "\t\t45:\t [M+HCOO]-"
+    echo -e "\t\t59:\t [M+CH3COO]-"
+    echo -e "o:\t Output file name (by default: <inchi>_<ionizedSpecies>.tsv)"
+    echo -e "s:\t Spectrum file name (by default: spectrum.dat* with pairs 'mass intensity' by row )"
+    echo -e "d:\t Relative mass deviation for  parent and fragments (by default 5 ppm)"
+    echo -e "d:\t Parameters file (by default parameters)"
+    echo  
+    echo -e "Example*:\t metfrag-CL 'CS(=O)(=O)C1=CC=C(C=C1)C(C(CF)NC(=O)C(Cl)Cl)O' -f 'C12H14Cl2FNO4S'"
+    echo
+    echo -e "* The file spectrum.dat is assumend to be in the same directory"
+    exit 1
+fi
+
+while true;
+do
+    case "$1" in
+	'-o')
+	    case "$2" in
+                '')
+                    outputFile="output";;
+                *)
+		    outputFile=$2;;
+            esac
+            shift 2
+            continue;;
+	'-f')
+	    case "$2" in
+                '')
+                    echo 'The molecular formula was not specified!' >&2
+		    exit 1;;
+                *)
+		    molecularFormula=$2;;
+            esac
+            shift 2
+            continue;;
+	'-s')
+	    case "$2" in
+                '')
+		    spectrumFile="spectrum.dat";;	
+                *)
+		    spectrumFile=$2;;
+            esac
+            shift 2
+            continue;;
+	'-d')
+	    case "$2" in
+                '')
+                    echo 'The relative mass deviation  was not given!' >&2
+		    exit 1;;
+                *)
+		    DBrmd=$2 # ppm
+		    Fragmentrmd=$2;;
+            esac
+            shift 2
+            continue;;
+ 	'-c')
+	    case "$2" in
+                '')
+                    c="";;
+                *)
+		    candidateSufix=$2
+		    paramsFile="parameters_"$candidateSufix".cfg"
+		    localDB="db_"$candidateSufix".csv";; # BD con informacion de moleculas candidatas
+            esac
+            shift 2
+            continue;;
+	'-b')
+	    case "$2" in
+                '')
+                    localDB_external=0;;
+                *)
+		    localDB_external=1
+		    localDB=$2;;
+            esac
+            shift 2
+            continue;;
+	'-t')
+	    case "$2" in
+                '')
+                    treeDeep=2;;
+                *)
+		    treeDeep=$2;;
+            esac
+            shift 2
+            continue;;
+	'-m')
+	    case "$2" in
+                '')
+		    searchKey="NeutralPrecursorMolecularFormula = "$molecularFormula;;
+                *)
+		    searchKey="NeutralPrecursorMass = "$2;;
+            esac
+            shift 2
+            continue;;		
+	'-a')
+	    case "$2" in
+                '')
+                    echo 'The ionizedSpecies was not specified!' >&2
+		    exit 1;;
+                *)
+		    if [ $2 -eq 1 ] || [ $2 -eq 18 ] || [ $2 -eq 23 ] || 
+			   [ $2 -eq 39 ] || [ $2 -eq 33 ] ||
+			   [ $2 -eq 42 ] || [ $2 -eq 64 ] || [ $2 -eq 83 ]; then
+			ionizedSpecies=$2 # Ion valido
+			polarity="true" # Polaridad positiva
+		    else
+			if [ $2 -eq -1 ] || [ $2 -eq 35 ] ||
+			       [ $2 -eq 45] || [ $2 -eq 39 ] ||
+			       [ $2 -eq 45 ] || 0[ $2 -eq 59 ]; then
+			    
+			    ionizedSpecies=$2 # Ion valido
+			    polarity="false" # Polaridad negativa
+			else
+			    echo "Ionized species not available"
+			    exit 1
+			fi
+		    fi
+		    ;;
+            esac
+            shift 2
+            continue;;
+	'--')
+	    shift
+	    break;;
+        *)
+	    echo 'Internal error!' >&2
+	    exit 1;;
+    esac
+done
+
+
+
+#------------------------------------------------------------------
+# Verificacion de spectros
+#----------------
+if [ -f $spectrumFile ];then
+    snumF=$(cat $spectrumFile | egrep "[0-9]" | wc -l)
+    slabF=$(cat $spectrumFile | egrep "[a-zA-Z]" | wc -l)
+    if [ $slabF -eq 0 ];then
+	if [ $snumF -eq 0 ];then
+	    echo 'Wrong spectrum file' >&2
+	    exit 1
+	fi
+    fi
+else
+    echo 'Wrong spectrum file' >&2
+    exit 1
+fi
+
+
+
+if [ $# -gt 0 ]; then
+    rm -rf "db_"$candidateSufix".csv" "parameters_"$candidateSufix".cfg"
+    canonicalSMILES=$1
+    if [ $# -gt 1 ] && [[ "$outputFile" == "output" ]]; then
+	outputFile=$2
+    fi
+fi
+
+
+#------------------------------------------------------------------
+# Plantilla de archivo de base de datos unimolecular
+#----------------
+
+if [ $localDB_external -eq 0 ];then
+    cat > $localDB <<EOF
+Identifier,MolecularFormula,SMILES,InChI
+$compID,$molecularFormula,$canonicalSMILES,-
+EOF
+    
+fi
+
+#------------------------------------------------------------------
+# Plantilla de archivo de configuracion de parametros
+#----------------
+cat > $paramsFile <<EOF
+#===================================================================
+# 1. AJUSTES DE PARAMETROS DEL ION
+#=============
+#
+# Especificacion del tipo de aducto que se evaluara. Opciones:
+#
+# Modo positivo (+)
+#-------------------
+# 1:  [M+H]+
+# 18: [M+NH4]+
+# 23: [M+Na]+
+# 39: [M+K]+
+# 33: [M+CH3OH+H]+
+# 42: [M+ACN+H]+
+# 64: [M+ACN+Na]+
+# 83: [M+2ACN+H]+
+
+# Modo negativo (-)
+#-------------------
+# -1: [M-H]-
+# 35: [M+Cl]-
+# 45: [M+HCOO]-
+# 59: [M+CH3COO]-
+
+# Sin aducto
+#-------------------
+# 0: [M]+/- (la polaridad se debe ajustar con base en la carga del ion)
+
+PrecursorIonMode = $ionizedSpecies
+
+# Especificacion de la polaridad asociada al aducto a evaluar. Opciones  true (+) y false (-)
+
+IsPositiveIonMode = $polarity
+
+#==================================================================
+# 2. AJUSTES DE INFORMACION ESPECTROMETRICA
+#============
+#
+# Especificacion del archivo con el espectro de fragmentacion MS2
+
+PeakListPath = $spectrumFile
+
+#==================================================================
+# 3. AJUSTES DE BASE DE DATOS CON IONES CANDIDATOS
+#============
+#
+# Especificacion de tipo de base de datos. Opciones: PubChem, KEGG, ExtendedPubChem, ChemSpiderRest, LocalSDF,LocalPSV, LocalCSV
+
+MetFragDatabaseType = LocalCSV
+
+# Especificacion de la BD con informacion de estructuras candidatas, es requerida para cualquier BD Local<type> donde type: CSV, PSV o SDF. Se pueden emplear varias separadas por coma.
+
+LocalDatabasePath = $localDB
+
+# Especificacion de desviacion de masa relativa para busqueda en la base de datos (ppm)
+
+DatabaseSearchRelativeMassDeviation = $DBrmd
+
+# Especificacion de claves de busqueda dentro de las bases de datos. Opciones: NeutralPrecursorMolecularFormula (Formula molecular), PrecursorCompoundIDs (Id dentro de una o mas bases de datos) o NeutralPrecursorMass (Masa monoisotopica neutra). La busqueda se da en el orden en que aparezca estos parametros en la BD.
+
+$searchKey 
+#PrecursorCompoundIDs = $compID # Para casos cuando se filtre un compuesto en especifico
+
+# Especificacion de modelo de puntuacion que se aplicara. Opciones: FragmenterScore (Puntuacion del fragmentador), o considerando informacion referencial obtenida de las BD como  ChemSpiderReferenceCount, ChemSpiderNumberExternalReferences, ChemSpiderRSCCount, ChemSpiderNumberPubMedReferences, ChemSpiderDataSourceCount, PubChemNumberPubMedReferences o PubChemNumberPatents, todos estos tipos estan asociados al numero de referencias o citaciones de la formula en una base de datos dada. Adicionalmente se puede especificar puntuaciones basadas en modelos de aprendizaje estadistico como AutomatedPeakFingerprintAnnotationScore o AutomatedLossFingerprintAnnotationScore
+
+MetFragScoreTypes = FragmenterScore,AutomatedPeakFingerprintAnnotationScore,AutomatedLossFingerprintAnnotationScore
+
+# Especifica un peso asociado a cada tipo de puntuador empleado, por tanto se debe especificar un peso por tipo de calificador adicionado
+
+MetFragScoreWeights = 1.0,0.0,0.0
+
+# Especificacion de bases de datos locales con informacion espectral (en formato mb. v.g. MoNA-export-LC-MS.mb)
+#OfflineSpectralDatabaseFile = /vol/spectral-databases
+
+#==================================================================
+# 4. AJUSTES DE UMBRALES PARA METRICAS DE COMPARACIONES ESPECTRALES
+#============
+#
+# Ajuste de desviacion relativa de masa maxima aceptada en un fragmento 
+FragmentPeakMatchRelativeMassDeviation = $Fragmentrmd
+
+# Ajuste de desviacion absoluta de masa maxima aceptada en un fragmento 
+#FragmentPeakMatchAbsoluteMassDeviation = 0.001
+
+#==================================================================
+# 5. AJUSTES PARA PRESENTACION DE LOS RESULTADOS
+#============
+#
+# Especificacion de ruta de almacenamiento de resultados
+
+ResultsPath = .
+
+# Especificacion de identificador (nombre) para el archivo de resultados
+SampleName = $outputFile
+
+
+# Especificacion de tipo de archivo de salida en el que se presentaran los resultados. Opciones: XLS,CSV, ExtendedFragmentsXLS, ExtendedXLS,SDF,FragmentSmilesPSV, LossFragmentSmilesCompletePSV, LossFragmentSmilesExtendedPSV, LossFragmentSmilesPSV. Los fragmentos en notacion smiles se visualizan mas facilmente en formato PSV (FragmentSmilesPSV) aunque tambien se encuentra en el archivo excel tipo ExtendedFragmentsXLS.
+
+MetFragCandidateWriter = FragmentSmilesPSV
+
+
+#==================================================================
+# 6. AJUSTES DEL ALGORITMO DE FRAGMENTACION 
+#============
+#
+
+# Algoritmos para pre/post procesamiento (filtrado) de candidatos adecuados
+MetFragPreProcessingCandidateFilter = IsotopeFilter
+#MetFragPostProcessingCandidateFilter = InChIKeyFilter
+
+# Maxima profundida recorrida en el grafo de fragmentacion
+MaximumTreeDepth = $treeDeep
+
+# Numero de hilos empleados para el procesamiento
+NumberThreads = $nThreads
+UseSmiles = true
+
+EOF
+
+if [ $# -gt 0 ]; then
+    eval java -jar $METFRAG_BASEPATH"bin/"MetFragCommandLine-2.5.0.jar $paramsFile | head -0 
+    rm -rf "db_"$candidateSufix".csv" "parameters_"$candidateSufix".cfg" $candidateSufix
+    
+    if [[ "$outputFile" == "output" ]]; then
+	
+	inchi=$(cat  output.psv | awk 'BEGIN{FS="|"};{print $5}' | tail -1)
+	sed -i 's:|Identifier|:|Identifier|Num|:g;s:|:\t:g' output.psv
+     	mv output.psv $inchi"_"${ionizedSpeciesL[$ionizedSpecies]}".tsv"
+
+    else
+	sed -i 's:|Identifier|:|Identifier|Num|:g;s:|:\t:g' $outputFile".psv"
+	mv $outputFile".psv" $outputFile".tsv"
+    fi
+
+fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

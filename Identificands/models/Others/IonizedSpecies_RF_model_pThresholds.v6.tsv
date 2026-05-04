@@ -1,0 +1,8 @@
+ionSpecies	probThres	dProbThres
++Cl	0.1	0
++H-H2O	0.32	0
++K	0.22	0
++NH4	0.38	0
++Na	0.6	0
++H	0.64	0
+-H	0.42	0

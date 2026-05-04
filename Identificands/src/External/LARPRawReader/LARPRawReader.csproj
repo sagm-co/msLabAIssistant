@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OpenMcdf" Version="2.2.1.3" />
+    <PackageReference Include="OpenMcdf.Extensions" Version="2.2.1.3" />
+    <PackageReference Include="ThermoFisher.CommonCore.BackgroundSubtraction" Version="5.0.0.71" />
+    <PackageReference Include="ThermoFisher.CommonCore.Data" Version="5.0.0.71" />
+    <PackageReference Include="ThermoFisher.CommonCore.MassPrecisionEstimator" Version="5.0.0.71" />
+    <PackageReference Include="ThermoFisher.CommonCore.RawFileReader" Version="5.0.0.71" />
+  </ItemGroup>
+
+</Project>
